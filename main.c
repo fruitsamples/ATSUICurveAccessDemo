@@ -4,7 +4,7 @@ File: main.c
 
 Abstract: Main entry point & basic event handling for ATSUICurveAccessDemo.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -44,7 +44,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -55,31 +55,17 @@ Copyright © 2004 Apple Computer, Inc., All Rights Reserved
 #include "atsui.h"
 #include "main.h"
 
-
 // Main entry point.  Sets things up, then runs the event loop
 //
 int main(int argc, char* argv[])
 {
-    char								startingFontName[] = "Geneva";
-    int									startingFontSize = 48;
-    ATSUFontID                          font;
-    OSStatus                            err = noErr;
+	OSStatus				err = noErr;
 
-    // Set up the menubar and main window
-    err = SetupMenuAndWindow();
-    require_noerr( err, CantDoSetup );
-    
     // Make sure we are using the right CG and ATSUI calls
     CheckAPIAvailability();
-
-    // ********** Create the ATSUI data and draw it for the first time **********
-    //
-    verify_noerr( ATSUFindFontFromName(startingFontName, strlen(startingFontName), kFontFullName, kFontNoPlatform, kFontNoScript, kFontNoLanguage, &font) );
-    verify( FindAndSelectFont(font) );
-    SetATSUIStuffFont(font);
-    SetATSUIStuffFontSize(Long2Fix(startingFontSize));
-    SetUpATSUIStuff();
-    DrawATSUIStuff(GetWindowPort(gWindow));
+	
+	err = SetupMenuAndWindow();
+	require_noerr( err, CantDoSetup );
 
     // Call the event loop
     RunApplicationEventLoop();
@@ -97,16 +83,12 @@ CantDoSetup:
 //
 void CheckAPIAvailability(void)
 {
-    long response;
+    SInt32			response;
 
     // These globals were already initialized to false in globals.c,
     // so we only need to change their value in the true case.
 
-    // The QDBeginCGContext / QDEndCGContext APIs were introduced in 0x0310 (Quickdraw version from Mac OS X 10.1)
-    verify_noerr( Gestalt(gestaltQuickdrawVersion, &response) );
-    if ( (response & 0x0000FFFF) >= 0x00000310 ) gNewCG = true;
-
-    // The Direct Access ATSUI APIs have a constant that can be used with the ATSUI features gestalt selector
+	// The Direct Access ATSUI APIs have a constant that can be used with the ATSUI features gestalt selector
     verify_noerr( Gestalt(gestaltATSUFeatures, &response) );
     if ( response & gestaltATSUDirectAccess ) gHaveDirectAccess = true;
     
@@ -123,8 +105,14 @@ OSStatus SetupMenuAndWindow(void)
 {
     IBNibRef                            nibRef;
     EventHandlerUPP                     handlerUPP;
-    EventTypeSpec                       eventType;
     OSStatus                            err;
+	static const HIViewID				myHIViewID = { 'myHV', 1 };
+	EventTypeSpec						myEvents[] = { { kEventClassWindow, kEventWindowClose },
+													   { kEventClassControl, kEventControlDraw },
+													   { kEventClassCommand, kEventCommandProcess } };
+    char								startingFontName[] = "Geneva";
+    int									startingFontSize = 48;
+    ATSUFontID                          font;
 
     // Create a Nib reference passing the name of the nib file (without the .nib extension)
     // CreateNibReference only searches into the application bundle.
@@ -145,32 +133,34 @@ OSStatus SetupMenuAndWindow(void)
     err = CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &gWindow);
     require_noerr( err, CantCreateWindow );
 
-    // The window was created hidden, so show it.
-    ShowWindow(gWindow);
-
     // We don't need the nib reference anymore.
     DisposeNibReference(nibRef);
 
+    verify_noerr( ATSUFindFontFromName(startingFontName, strlen(startingFontName), kFontFullName, kFontNoPlatform, kFontNoScript, kFontNoLanguage, &font) );
+    verify( FindAndSelectFont(font) );
+    SetATSUIStuffFont(font);
+    SetATSUIStuffFontSize(Long2Fix(startingFontSize));
+    SetUpATSUIStuff();
+
+	HIViewFindByID(HIViewGetRoot(gWindow), myHIViewID, &gHIViewRef);
+
     // Install a handler to quit the application when the window is closed
-    eventType.eventClass = kEventClassWindow;
-    eventType.eventKind  = kEventWindowClose;
     handlerUPP = NewEventHandlerUPP(DoWindowClose);			// DoWindowClose() is defined in window.c
-    verify_noerr( InstallWindowEventHandler(gWindow, handlerUPP, 1, &eventType, NULL, NULL) );
+    verify_noerr(InstallWindowEventHandler(gWindow, handlerUPP, GetEventTypeCount(myEvents[0]), &myEvents[0], NULL, NULL));
 
     // Install a handler to draw the contents of the window
-    eventType.eventClass = kEventClassWindow;
-    eventType.eventKind  = kEventWindowBoundsChanged;
     handlerUPP = NewEventHandlerUPP(DoWindowBoundsChanged);	// DoWindowBoundsChanged() is defined in window.c
-    verify_noerr( InstallWindowEventHandler(gWindow, handlerUPP, 1, &eventType, NULL, NULL) );
+    verify_noerr(HIViewInstallEventHandler(gHIViewRef, handlerUPP, GetEventTypeCount(myEvents[1]), &myEvents[1], (void *)gHIViewRef, NULL));
 
     // Install a handler for command events
-    eventType.eventClass = kEventClassCommand;
-    eventType.eventKind  = kEventCommandProcess;
     handlerUPP = NewEventHandlerUPP(DoCommandEvent);		// DoCommandEvent() is defined below
-    verify_noerr( InstallApplicationEventHandler(NewEventHandlerUPP(DoCommandEvent), 1, &eventType, NULL, NULL) );
+    verify_noerr(InstallApplicationEventHandler(handlerUPP, GetEventTypeCount(myEvents[2]), &myEvents[2], NULL, NULL));
 
     // Set up the global print session
-    verify_noerr( InitializePrinting() );
+    verify_noerr(InitializePrinting());
+
+    // The window was created hidden, so show it.
+    ShowWindow(gWindow);
 
 CantCreateWindow:
 CantCreateFontMenu:
@@ -187,11 +177,10 @@ pascal OSStatus DoCommandEvent(EventHandlerCallRef nextHandler, EventRef theEven
     UInt32                  theCommandID;
     MenuRef                 theMenu;
     MenuItemIndex           theItem;
-    FMFont                  font;
+	ATSFontRef				font;
     OSStatus                status = eventNotHandledErr;
     Boolean                 needsRedrawing = false;
 
-    
     // Get the HICommand from the event structure, then get the menu reference and item out of that
     verify_noerr( GetEventParameter(theEvent, kEventParamDirectObject, typeHICommand, NULL, sizeof(HICommand), NULL, &theCommand) );
     theCommandID = theCommand.commandID;
@@ -228,26 +217,6 @@ pascal OSStatus DoCommandEvent(EventHandlerCallRef nextHandler, EventRef theEven
     }
     else switch (theCommandID) {						// Handle other menu commands
         case 'OPT1':
-            gUseCG = ( ! gUseCG );
-            CheckMenuItem(theMenu, theItem, gUseCG);
-            if ( gUseCG ) {
-                DisableMenuCommand(NULL, 'OPT2'); // Disable AnimateQDSegments option if CG is used
-            }
-            else {
-                EnableMenuCommand(NULL, 'OPT2');  // Enable AnimateQDSegments option if CG is not used
-            }
-            status = noErr;
-            needsRedrawing = true;
-            break;
-
-        case 'OPT2':
-            gAnimateQDSegments = ( ! gAnimateQDSegments );
-            CheckMenuItem(theMenu, theItem, gAnimateQDSegments);
-            status = noErr;
-            needsRedrawing = true;
-            break;
-
-        case 'OPT3':
             gFilterDegenerates = ( ! gFilterDegenerates );
             CheckMenuItem(theMenu, theItem, gFilterDegenerates);
             status = noErr;
@@ -295,6 +264,8 @@ pascal OSStatus DoCommandEvent(EventHandlerCallRef nextHandler, EventRef theEven
     }
 
     // Redraw if necessary
-    if (needsRedrawing) DrawATSUIStuff(GetWindowPort(gWindow));
+	if (needsRedrawing)
+		HIViewSetNeedsDisplay(gHIViewRef, true);
+	
     return status;
 }

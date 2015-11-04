@@ -4,7 +4,7 @@ File: atsui.h
 
 Abstract: Header for atsui.c in ATSUICurveAccessDemo project.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -44,7 +44,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -58,6 +58,7 @@ typedef struct {
     float				windowHeight;		// Height of the window (used to flip the y-coordinate for CG drawing)
     Boolean				first;				// Keeps track of which segment is first in a glyph
     Float32Point		current;			// The current pen position (used to filter degenerate cases)
+	CGContextRef		context;			// CG context to draw in
 } MyCurveCallbackData;
 
 // Holds all information needed to draw a particular glyph
@@ -73,9 +74,9 @@ void SetATSUIStuffFont(ATSUFontID inFont);
 void SetATSUIStuffFontSize(Fixed inSize);
 void UpdateATSUIStyle(void);
 void SetUpATSUIStuff(void);
-void DrawATSUIStuff(GrafPtr port);
-void DrawCubics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight);
-void DrawQuadratics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight);
+void DrawATSUIStuff(CGContextRef cgContext, CGRect bounds);
+void DrawCubics(CGContextRef cgContext, ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight);
+void DrawQuadratics(CGContextRef cgContext, ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight);
 void GetGlyphIDsAndPositions(ATSUTextLayout iLayout, UniCharArrayOffset iStart, UniCharCount iLength, MyGlyphRecord **oGlyphRecordArray, ItemCount *numGlyphs);
 void DisposeATSUIStuff(void);
 

@@ -5,7 +5,7 @@ File: cubic.c
 Abstract: Callbacks for use with ATSUGlyphGetCubicPaths. Part of the
 ATSUICurveAccessDemo project.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -45,7 +45,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -85,13 +85,8 @@ OSStatus MyCubicMoveToProc(const Float32Point *pt, void *callBackDataPtr)
     float y = ((MyCurveCallbackData *)callBackDataPtr)->origin.y + pt->y;
 
     // Move to the point
-    if (gUseCG) {
-        y = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y;
-        CGContextMoveToPoint(gContext, x, y);
-    }
-    else {
-        MoveTo(x, y);
-    }
+	y = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y;
+	CGContextMoveToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, x, y);
 
     // Keep track of the current pen position (used to filter degenerate cases)
     ((MyCurveCallbackData *)callBackDataPtr)->current.x = x;
@@ -115,24 +110,8 @@ OSStatus MyCubicLineToProc(const Float32Point *pt, void *callBackDataPtr)
     if ( ! (gFilterDegenerates && (x == ((MyCurveCallbackData *)callBackDataPtr)->current.x) && (y == ((MyCurveCallbackData *)callBackDataPtr)->current.y)) ) {
 
         // Draw a line to the point
-        if (gUseCG) {
-            // Use CoreGraphics
-            y = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y;
-            CGContextAddLineToPoint(gContext, x, y);
-        } 
-        else {
-            // Use QuickDraw
-            LineTo(x, y);
-    
-            if (gAnimateQDSegments) {
-                GrafPtr port;
-
-                GetPort(&port);
-                usleep(10000);
-                QDFlushPortBuffer(port, NULL);
-            }
-        }
-
+		y = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y;
+		CGContextAddLineToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, x, y);
     } // End of degenerate filter
 
     // Keep track of the current pen position (used to filter degenerate cases)
@@ -162,25 +141,10 @@ OSStatus MyCubicCurveToProc(const Float32Point *pt1, const Float32Point *pt2, co
     float y3 = ((MyCurveCallbackData *)callBackDataPtr)->origin.y + pt3->y;
 
     // Draw a curve according to the points
-    if (gUseCG) {
-        // Use CoreGraphics to actually draw the curve
-        y1 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y1;
-        y2 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y2;
-        y3 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y3;
-        CGContextAddCurveToPoint(gContext, x1, y1, x2, y2, x3, y3);
-    }
-    else {
-        // Use QuickDraw to simply draw a "connect the dot" representation of the curve
-        LineTo(x3, y3);
-
-        if (gAnimateQDSegments) {
-            GrafPtr port;
-            
-            GetPort(&port);
-            usleep(10000);
-            QDFlushPortBuffer(port, NULL);
-        }
-    }
+	y1 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y1;
+	y2 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y2;
+	y3 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y3;
+	CGContextAddCurveToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, x1, y1, x2, y2, x3, y3);
 
     // Keep track of the current pen position (used to filter degenerate cases)
     ((MyCurveCallbackData *)callBackDataPtr)->current.x = x3;

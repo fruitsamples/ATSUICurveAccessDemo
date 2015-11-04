@@ -5,7 +5,7 @@ File: globals.h
 Abstract: Extern definitions for app-wide globals. Part of the
 ATSUICurveAccessDemo project.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -45,7 +45,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -58,15 +58,15 @@ Copyright © 2004 Apple Computer, Inc., All Rights Reserved
 
 // Font menu constants
 enum {
-    kFontMenuID         = 128
+    kFontMenuID			= 128
 };
 
 // Constants for menu check marks
 // (UniChar constants)
 enum {
-    kMenuCheckMark                      = 0x0012,       // This corresponds to a checkmark in the keyboard font
-    kMenuDashMark                       = 0x002D,       // This is just a normal hyphen/minus character
-    kMenuNoMark                         = 0x0000        // Null character -- shows up as no mark in a menu
+    kMenuCheckMark		= 0x0012,       // This corresponds to a checkmark in the keyboard font
+    kMenuDashMark		= 0x002D,       // This is just a normal hyphen/minus character
+    kMenuNoMark			= 0x0000        // Null character -- shows up as no mark in a menu
 };
 
 
@@ -74,19 +74,17 @@ enum {
 //  - = - Global variables - = -
 //
 
-extern Boolean                                  gUseCG;
-extern Boolean                                  gNewCG;
-extern Boolean									gHaveDirectAccess;
-extern Boolean                                  gAnimateQDSegments;
-extern Boolean                                  gFilterDegenerates;
-extern Boolean                                  gOutputCurveType;
-extern Boolean                                  gOutputNumSegments;
-extern Boolean                                  gOutputNumOps;
+extern Boolean			gHaveDirectAccess;
+extern Boolean			gAnimateQDSegments;
+extern Boolean			gFilterDegenerates;
+extern Boolean			gOutputCurveType;
+extern Boolean			gOutputNumSegments;
+extern Boolean			gOutputNumOps;
 
-extern UInt32                                   gCurrentFontSizeCommandID;
+extern UInt32			gCurrentFontSizeCommandID;
 
-extern CGContextRef                             gContext;
-extern WindowRef                                gWindow;
-extern char                                     gDebugString[255];
+extern HIViewRef		gHIViewRef;
+extern WindowRef		gWindow;
+extern char				gDebugString[255];
 
 #endif  /* MY_GLOBALS_H */

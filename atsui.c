@@ -10,7 +10,7 @@ glyph ID fetching is conditionalized to use the Direct Access APIs
 when available, and the GlyphInfoArray APIs when Direct Access is
 not available (systems prior to 10.2).
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -50,7 +50,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -118,63 +118,42 @@ void SetUpATSUIStuff(void)
 // Draws the current ATSUI data.  Takes a GrafPtr as an argument so
 // that it can handle printing as well as drawing into a window.
 //
-void DrawATSUIStuff(GrafPtr drawingPort)
+void DrawATSUIStuff(CGContextRef cgContext, CGRect bounds)
 {
-    GrafPtr                             savedPort;
-    Rect                                portBounds;
     Fixed                               penX, penY;
     float                               spacer, height;
     ATSCurveType                        curveType;
     ATSUAttributeTag                    tags[2];
     ByteCount                           sizes[2];
     ATSUAttributeValuePtr               values[2];
-
-    // Set up the GrafPort
-    GetPort(&savedPort);
-    SetPort(drawingPort);
-    GetPortBounds(drawingPort, &portBounds);
-    EraseRect(&portBounds);
-
-    // If CG mode, set it up
-    if ( gUseCG ) {
-        if (gNewCG) QDBeginCGContext(drawingPort, &gContext); else CreateCGContextForPort(drawingPort, &gContext);
-        tags[0] = kATSUCGContextTag;
-        sizes[0] = sizeof(CGContextRef);
-        values[0] = &gContext;
-        verify_noerr( ATSUSetLayoutControls(layout, 1, tags, sizes, values) );
-    }
-    else {
-        // This is a workaround for older systems in which ATSUClearLayoutControls wasn't working
-        // for kATSUCGContextTag sometimes.  If your app doesn't need to run on 10.1.x or earlier
-        // systems, don't bother doing this.
-        gContext = NULL;
-        tags[0] = kATSUCGContextTag;
-        sizes[0] = sizeof(CGContextRef);
-        values[0] = &gContext;
-        verify_noerr( ATSUSetLayoutControls(layout, 1, tags, sizes, values) );
-
-        // Clear the CGContext
-        tags[0] = kATSUCGContextTag;
-        verify_noerr( ATSUClearLayoutControls(layout, 1, tags) );
-    }
+	OSStatus							status = noErr;
 
     // Figure out the spacing
-    height = portBounds.bottom - portBounds.top;
-    spacer = height / 4.0;
-    penX = Long2Fix(kLeftMargin);
-    penY = Long2Fix(0);
+	height = bounds.size.height;
+	spacer = height / 4.0;
+	penX = Long2Fix(kLeftMargin);
+	penY = Long2Fix(0);
 
     // Regular ATSUDrawText
+	//
+	// Add CGContext to style.   Unlike ATSUI in QD, where it would draw in the current port,
+	// we need to specify the CGContext that ATSUI will be using to draw in.
+	//
+	tags[0] = kATSUCGContextTag;
+	sizes[0] = sizeof(CGContextRef);
+	values[0] = &cgContext;
+	verify_noerr( ATSUSetLayoutControls(layout, 1, tags, sizes, values) );
+	
     penY += X2Fix(spacer);
-    verify_noerr( ATSUDrawText(layout, kATSUFromTextBeginning, kATSUToTextEnd, penX, ((gUseCG) ? X2Fix(height) - penY : penY)) );
-
+	verify_noerr( ATSUDrawText(layout, kATSUFromTextBeginning, kATSUToTextEnd, penX, X2Fix(height) - penY ) );
+	
     // Cubics
     penY += X2Fix(spacer);
-    DrawCubics(layout, style, kATSUFromTextBeginning, kATSUToTextEnd, penX, penY, height);
+    DrawCubics(cgContext, layout, style, kATSUFromTextBeginning, kATSUToTextEnd, penX, penY, height);
 
     // Quadratics
     penY += X2Fix(spacer);
-    DrawQuadratics(layout, style, kATSUFromTextBeginning, kATSUToTextEnd, penX, penY, height);
+    DrawQuadratics(cgContext, layout, style, kATSUFromTextBeginning, kATSUToTextEnd, penX, penY, height);
 
     // Output the native curve type
     if ( gOutputCurveType ) {
@@ -187,20 +166,14 @@ void DrawATSUIStuff(GrafPtr drawingPort)
         fflush(stdout);
     }
 
-    // If CG mode, tear it down
-    if ( gUseCG ) {
-		CGContextFlush(gContext);
-        if (gNewCG) QDEndCGContext(drawingPort, &gContext); else CGContextRelease(gContext);    
-    }
-
-    // Restore the GrafPort
-    SetPort(savedPort);
+    // Tear down the CGContext
+	CGContextFlush(cgContext);
 }
 
 
 // Draws the glyphs in the layout as Cubics
 //
-void DrawCubics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight)
+void DrawCubics(CGContextRef cgContext, ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight)
 {
     MyGlyphRecord						*glyphRecordArray;
     ItemCount							numGlyphs;
@@ -217,13 +190,14 @@ void DrawCubics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset sta
     lineToProc = NewATSCubicLineToUPP(MyCubicLineToProc);
     curveToProc = NewATSCubicCurveToUPP(MyCubicCurveToProc);
     closePathProc = NewATSCubicClosePathUPP(MyCubicClosePathProc);
+	data.context = cgContext;
 
     // Get the array of glyph information
     GetGlyphIDsAndPositions(iLayout, start, length, &glyphRecordArray, &numGlyphs);
 
     // Begin a CG path for the outlines and set the stroke color to blue
-    if (gUseCG) CGContextSetRGBStrokeColor(gContext, 0.0, 0.0, 1.0, 1.0); else ForeColor(blueColor);
-    if (gUseCG) CGContextBeginPath(gContext);
+    CGContextSetRGBStrokeColor(cgContext, 0.0, 0.0, 1.0, 1.0);
+    CGContextBeginPath(cgContext);
 
     // Loop over all the glyphs
     data.windowHeight = windowHeight; // Needed for flipping the y-coordinate between CG and QD space
@@ -233,9 +207,6 @@ void DrawCubics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset sta
         data.origin.x = Fix2X(penX) + glyphRecordArray[i].relativeOrigin.x;
         data.origin.y = Fix2X(penY) + glyphRecordArray[i].relativeOrigin.y;
 
-        // Don't bother with this flag, the cubic callbacks ignore it
-        //data.first = true;
-        
         // If this is a deleted glyph (-1), don't draw it.  Otherwise, go ahead.
         if ( glyphRecordArray[i].glyphID != kATSDeletedGlyphcode ) {
             verify_noerr( ATSUGlyphGetCubicPaths(iStyle, glyphRecordArray[i].glyphID, moveToProc, lineToProc, curveToProc, closePathProc, &data, &status) );
@@ -243,13 +214,9 @@ void DrawCubics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset sta
     }
 
     // Stroke the outlines and restore the stroke color to black
-    if (gUseCG) {
-        CGContextClosePath(gContext);
-        CGContextDrawPath(gContext, kCGPathStroke);
-        CGContextSetRGBStrokeColor(gContext, 0.0, 0.0, 0.0, 1.0);
-    } else {
-        ForeColor(blackColor);
-    }
+	CGContextClosePath(cgContext);
+	CGContextDrawPath(cgContext, kCGPathStroke);
+	CGContextSetRGBStrokeColor(cgContext, 0.0, 0.0, 0.0, 1.0);
     
     // Free the array of glyph information
     free(glyphRecordArray);
@@ -264,7 +231,7 @@ void DrawCubics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset sta
 
 // Draws the glyphs in the layout as Quadratics
 //
-void DrawQuadratics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight)
+void DrawQuadratics(CGContextRef cgContext, ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset start, UniCharCount length, Fixed penX, Fixed penY, float windowHeight)
 {
     MyGlyphRecord						*glyphRecordArray;
     ItemCount							numGlyphs;
@@ -281,13 +248,14 @@ void DrawQuadratics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset
     lineProc = NewATSQuadraticLineUPP(MyQuadraticLineProc);
     curveProc = NewATSQuadraticCurveUPP(MyQuadraticCurveProc);
     closePathProc = NewATSQuadraticClosePathUPP(MyQuadraticClosePathProc);
+	data.context = cgContext;
 
     // Get the array of glyph information
     GetGlyphIDsAndPositions(iLayout, start, length, &glyphRecordArray, &numGlyphs);
 
     // Begin a CG path for the outlines and set the stroke color to red
-    if (gUseCG) CGContextSetRGBStrokeColor(gContext, 1.0, 0.0, 0.0, 1.0); else ForeColor(redColor);
-    if (gUseCG) CGContextBeginPath(gContext);
+    CGContextSetRGBStrokeColor(cgContext, 1.0, 0.0, 0.0, 1.0);
+    CGContextBeginPath(cgContext);
 
     // Loop over all the glyphs
     data.windowHeight = windowHeight; // Needed for flipping the y-coordinate between CG and QD space
@@ -307,15 +275,10 @@ void DrawQuadratics(ATSUTextLayout iLayout, ATSUStyle iStyle, UniCharArrayOffset
     }
     
     // Stroke the outlines and restore the stroke color to black
-    if (gUseCG) {
-        CGContextClosePath(gContext);
-        CGContextDrawPath(gContext, kCGPathStroke);
-        CGContextSetRGBStrokeColor(gContext, 0.0, 0.0, 0.0, 1.0);
-    } else {
-        ForeColor(blackColor);
-    }
+	CGContextClosePath(cgContext);
+	CGContextDrawPath(cgContext, kCGPathStroke);
+	CGContextSetRGBStrokeColor(cgContext, 0.0, 0.0, 0.0, 1.0);
 
-    // Free the array of glyph information
     free(glyphRecordArray);
 
     // Dispose of the Quadratic callbacks
@@ -373,13 +336,18 @@ void GetGlyphIDsAndPositions(ATSUTextLayout iLayout, UniCharArrayOffset iStart, 
     // (These are no longer recommended, in favor of the new Direct Acess APIs)
     else {
         ATSUGlyphInfoArray					*theGlyphInfoArrayPtr;
-        ByteCount							theArraySize;
+//        ByteCount							theArraySize;
         int									i;
+		void								*layoutDataArrayPtr;
+		ItemCount							*layoutDataCount;
         
         // Get the GlyphInfoArray
-        verify_noerr( ATSUGetGlyphInfo(iLayout, iStart, iLength, &theArraySize, NULL) );
-        theGlyphInfoArrayPtr = (ATSUGlyphInfoArray *) malloc(theArraySize + sizeof(ItemCount) + sizeof(ATSUTextLayout));
-        verify_noerr( ATSUGetGlyphInfo(iLayout, iStart, iLength, &theArraySize, theGlyphInfoArrayPtr) );
+//        verify_noerr( ATSUGetGlyphInfo(iLayout, iStart, iLength, &theArraySize, NULL) );
+//        theGlyphInfoArrayPtr = (ATSUGlyphInfoArray *) malloc(theArraySize + sizeof(ItemCount) + sizeof(ATSUTextLayout));
+//        verify_noerr( ATSUGetGlyphInfo(iLayout, iStart, iLength, &theArraySize, theGlyphInfoArrayPtr) );
+
+		verify_noerr( ATSUDirectGetLayoutDataArrayPtrFromTextLayout(iLayout, iStart, kATSUDirectDataAdvanceDeltaFixedArray, &layoutDataArrayPtr, layoutDataCount) );
+        theGlyphInfoArrayPtr = (ATSUGlyphInfoArray *) malloc((ByteCount)layoutDataArrayPtr + sizeof(ItemCount) + sizeof(ATSUTextLayout));
 
         // Build the array of MyGlyphRecords
         *oGlyphRecordArray = (MyGlyphRecord *)malloc(theGlyphInfoArrayPtr->numGlyphs * sizeof(MyGlyphRecord));

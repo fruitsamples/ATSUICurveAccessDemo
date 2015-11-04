@@ -8,7 +8,7 @@ printing sample code. Just here to show that you can, in fact,
 print glyph outlines smoothly. Part of the ATSUICurveAccessDemo
 project.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -48,16 +48,17 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
+#include "globals.h"
 #include "atsui.h"
 #include "print.h"
 
 // Globals (for this source file only)
 //
-static  Handle                  gflatPageFormat = NULL;         // used in FlattenAndSavePageFormat
+static	CFDataRef				gData = NULL;
 static  PMPageFormat            gPageFormat = kPMNoPageFormat;
 static  PMPrintSettings         gPrintSettings = kPMNoPrintSettings;
 static  PMPrintSession          gPrintSession;
@@ -243,17 +244,18 @@ OSStatus DoPrintDialog(void)
 ------------------------------------------------------------------------------*/
 void DoPrintLoop(void)
 {
-    OSStatus    status,
-                printError;
-    GrafPtr     currPort, printingPort;
-    UInt32      realNumberOfPagesinDoc,
-                pageNumber,
-                firstPage,
-                lastPage;
-    CFStringRef jobName = CFSTR("ATSUITestApp");
+    OSStatus		status,
+					printError;
+    UInt32			realNumberOfPagesinDoc,
+					pageNumber,
+					firstPage,
+					lastPage;
+    CFStringRef		jobName = CFSTR("ATSUITestApp");
+	CGContextRef	printingContext = NULL;
+	PMRect			pageRect;
 
     //  Since this sample code doesn't have a window, give the spool file a name.
-    status = PMSetJobNameCFString(gPrintSettings, jobName);
+	status = PMPrintSettingsSetJobName(gPrintSettings, jobName);
 
     //  Get the user's Print dialog selection for first and last pages to print.
     if (status == noErr) {
@@ -289,7 +291,7 @@ void DoPrintLoop(void)
     //  first page to be printed, to the last.
     if (status == noErr) {
         //  Establish a graphics context for drawing the document's pages.
-        status = PMSessionBeginDocument(gPrintSession, gPrintSettings, gPageFormat);
+		status = PMSessionBeginCGDocument(gPrintSession, gPrintSettings, gPageFormat);
         if (status == noErr) {
             //  Print the selected range of pages in the document.      
             pageNumber = firstPage;
@@ -306,23 +308,18 @@ void DoPrintLoop(void)
                     break;
                 }
                 
-                //  Save the current QD grafport.
-                GetPort(&currPort);
-                
-                //  Get the current graphics context, in this case a Quickdraw grafPort,
-                //  for drawing the page.
-                status = PMSessionGetGraphicsContext(gPrintSession, kPMGraphicsContextQuickdraw, (void**) &printingPort);
+                //  Get the current graphics context for drawing the page.
+				status = PMSessionGetCGGraphicsContext(gPrintSession, &printingContext);
                 if (status == noErr) {
-                    //  Set the printing port before drawing the page.
-                    SetPort((GrafPtr) printingPort);
-                
+					CGRect		cgPageBounds;
+					
+					//  Set the printing port before drawing the page.
+					status = PMGetUnadjustedPageRect(gPageFormat, &pageRect);
+					cgPageBounds = CGRectMake(0, 0, pageRect.right - pageRect.left, pageRect.bottom - pageRect.top);
+					
                     //  Draw the page.
-                    //DrawPage(gPrintSession, pageNumber, addPostScript);
-                    DrawATSUIStuff((GrafPtr) printingPort);
-                    
-                    //  Restore the QD grafport.
-                    SetPort(currPort);
-                }
+					DrawATSUIStuff(printingContext, cgPageBounds);
+				}
             
                 //  Close the page.
                 status = PMSessionEndPage(gPrintSession);
@@ -367,14 +364,14 @@ void DoPrintLoop(void)
 OSStatus FlattenAndSavePageFormat(PMPageFormat pageFormat)
 {
     OSStatus    status;
-    Handle  flatFormatHandle = NULL;
+	CFDataRef	data = NULL;
     
     //  Flatten the PageFormat object to memory.
-    status = PMFlattenPageFormat(pageFormat, &flatFormatHandle);
+	status = PMPageFormatCreateDataRepresentation(pageFormat, &data, kPMDataFormatXMLDefault);
     
     //  Write the PageFormat data to file.
     //  In this sample code we simply copy it to a global.  
-    gflatPageFormat = flatFormatHandle;
+	gData = data;
 
     return status;
 }   //  FlattenAndSavePageFormat
@@ -397,14 +394,14 @@ OSStatus FlattenAndSavePageFormat(PMPageFormat pageFormat)
 OSStatus    LoadAndUnflattenPageFormat(PMPageFormat* pageFormat)
 {
     OSStatus    status;
-    Handle  flatFormatHandle = NULL;
+	CFDataRef	data = NULL;
 
     //  Read the PageFormat flattened data from file.
     //  In this sample code we simply copy it from a global.
-    flatFormatHandle = gflatPageFormat;
+	data = gData;
 
     //  Convert the PageFormat flattened data into a PageFormat object.
-    status = PMUnflattenPageFormat(flatFormatHandle, pageFormat);
+	status = PMPageFormatCreateWithDataRepresentation(data, pageFormat);
     
     return status;
 }   //  LoadAndUnflattenPageFormat

@@ -5,7 +5,7 @@ File: quadratic.c
 Abstract: Callbacks for use with ATSUGlyphGetQuadraticPaths. Part of the
 ATSUICurveAccessDemo project.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -45,7 +45,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -90,33 +90,17 @@ OSStatus MyQuadraticLineProc(const Float32Point *pt1, const Float32Point *pt2, v
     if ( ! (gFilterDegenerates && (x1 == x2) && (y1 == y2)) ) {
 
         // Draw a line according to the points
-        if (gUseCG) {
-            // Use CoreGraphics
-            y1 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y1;
-            y2 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y2;
-            if ( ((MyCurveCallbackData *)callBackDataPtr)->first ) {
-                // MoveTo can confuse CG's path handling if done when unnecessary.
-                // Only do it at the beginning of each contour, and assume
-                // the points are connected in order after that.
-                CGContextMoveToPoint(gContext, x1, y1);
-                ((MyCurveCallbackData *)callBackDataPtr)->first = false;
-            }
-            CGContextAddLineToPoint(gContext, x2, y2);
-        }
-        else {
-            // Use QuickDraw
-            MoveTo(x1, y1);
-            LineTo(x2, y2);
-    
-            if (gAnimateQDSegments) {
-                GrafPtr port;
-        
-                GetPort(&port);
-                usleep(10000);
-                QDFlushPortBuffer(port, NULL);
-            }
-        }
-
+		y1 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y1;
+		y2 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y2;
+		if ( ((MyCurveCallbackData *)callBackDataPtr)->first ) {
+			// MoveTo can confuse CG's path handling if done when unnecessary.
+			// Only do it at the beginning of each contour, and assume
+			// the points are connected in order after that.
+			CGContextMoveToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, x1, y1);
+			((MyCurveCallbackData *)callBackDataPtr)->first = false;
+		}
+		CGContextAddLineToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, x2, y2);
+		
     } // End of degenerate filter
 
     // Update counters and return
@@ -141,30 +125,14 @@ OSStatus MyQuadraticCurveProc(const Float32Point *pt1, const Float32Point *contr
     float cpy = ((MyCurveCallbackData *)callBackDataPtr)->origin.y + controlPt->y;
 
     // Draw a curve according to the points
-    if (gUseCG) {
-        // Use CoreGraphics to actually draw the curve
-        y1 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y1;
-        y2 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y2;
-        cpy = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - cpy;
-        if ( ((MyCurveCallbackData *)callBackDataPtr)->first ) {
-            CGContextMoveToPoint(gContext, x1, y1);
-            ((MyCurveCallbackData *)callBackDataPtr)->first = false;
-        }
-        CGContextAddQuadCurveToPoint(gContext, cpx, cpy, x2, y2);
-    }
-    else {
-        // Use QuickDraw to simply draw a "connect the dots" representation of the curve
-        MoveTo(x1, y1);
-        LineTo(x2, y2);
-
-        if (gAnimateQDSegments) {
-            GrafPtr port;
-
-            GetPort(&port);
-            usleep(10000);
-            QDFlushPortBuffer(port, NULL);
-        }
-    }
+	y1 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y1;
+	y2 = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - y2;
+	cpy = ((MyCurveCallbackData *)callBackDataPtr)->windowHeight - cpy;
+	if ( ((MyCurveCallbackData *)callBackDataPtr)->first ) {
+		CGContextMoveToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, x1, y1);
+		((MyCurveCallbackData *)callBackDataPtr)->first = false;
+	}
+	CGContextAddQuadCurveToPoint(((MyCurveCallbackData *)callBackDataPtr)->context, cpx, cpy, x2, y2);
 
     // Update counters and return
     if (gOutputNumSegments) segmentCount++;

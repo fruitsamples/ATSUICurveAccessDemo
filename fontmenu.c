@@ -7,7 +7,7 @@ would be nice, but this sample runs all the way back to 10.0.0, which did
 not have the font panel available to Carbon apps. Part of the
 ATSUICurveAccessDemo project.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -47,7 +47,7 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */ 
 
@@ -102,9 +102,7 @@ void BuildFontMenuParentItemArray(void)
     numItems = CountMenuItems(GetMenuRef(gFontMenuID));
 
     for (i=1; i <= numItems; i++) {
-
         verify_noerr( GetMenuItemHierarchicalMenu(GetMenuRef(gFontMenuID), i, &theSubMenu) );
-
         if ( theSubMenu != NULL ) {
             gFontMenuHierarchicalItems[currentIndex++] = i;
         }
@@ -133,13 +131,14 @@ MenuItemIndex GetFontMenuParentItem(MenuRef inMenu)
 
 // Handles changes to the font menu
 //
-FMFont SelectAndGetFont(MenuRef theMenu, MenuItemIndex theItem)
+ATSFontRef SelectAndGetFont(MenuRef theMenu, MenuItemIndex theItem)
 {
     MenuRef                 parentMenuRef;
     MenuItemIndex           parentMenuItem;
     FMFontFamily            theFMFontFamily;
     FMFontStyle             theFMFontStyle;
-    FMFont                  theFont;
+    ATSFontRef              theFont = kInvalidFont;
+	CTFontRef				ctRef;
 
     // Uncheck the previous item (if any)
     if (gFontMenuCurrentMenuItem != (MenuItemIndex)-1) {
@@ -169,7 +168,12 @@ FMFont SelectAndGetFont(MenuRef theMenu, MenuItemIndex theItem)
 
     // Return the proper font
     verify_noerr( GetFontFamilyFromMenuSelection(gFontMenuCurrentMenuRef, gFontMenuCurrentMenuItem, &theFMFontFamily, &theFMFontStyle) );
-    verify_noerr( FMGetFontFromFontFamilyInstance(theFMFontFamily, theFMFontStyle, &theFont, NULL) );
+	ctRef = CTFontCreateWithQuickdrawInstance("\p", theFMFontFamily, theFMFontStyle, 0.0);
+	if (ctRef != NULL) {
+		theFont = CTFontGetPlatformFont(ctRef, NULL);
+		CFRelease(ctRef);
+	}
+		
     return theFont;
 }
 
@@ -181,11 +185,12 @@ Boolean FindAndSelectFont(FMFont iFont)
 {
     FMFontFamily            theFMFontFamily;
     FMFontStyle             theFMFontStyle;
-    FMFont					currentFont;
     ItemCount               numItems, numSubItems;
     MenuRef                 theSubMenu = NULL;
     MenuItemIndex			parentMenuItem, i, j;
     Boolean					found = false;
+    ATSFontRef              currentFont = kInvalidFont;
+	CTFontRef				ctRef;
 
 
     // Loop over all the parent menu items (outer loop)
@@ -200,7 +205,11 @@ Boolean FindAndSelectFont(FMFont iFont)
             numSubItems = CountMenuItems(theSubMenu);
             for (j=1; j <= numSubItems; j++) {
                 verify_noerr( GetFontFamilyFromMenuSelection(theSubMenu, j, &theFMFontFamily, &theFMFontStyle) );
-                verify_noerr( FMGetFontFromFontFamilyInstance(theFMFontFamily, theFMFontStyle, &currentFont, NULL) );
+				ctRef = CTFontCreateWithQuickdrawInstance("\p", theFMFontFamily, theFMFontStyle, 0.0);
+				if (ctRef != NULL) {
+					currentFont = CTFontGetPlatformFont(ctRef, NULL);
+					CFRelease(ctRef);
+				}
                 
                 if (currentFont == iFont) {
                     found = true;
@@ -210,7 +219,11 @@ Boolean FindAndSelectFont(FMFont iFont)
         }
         else {
             verify_noerr( GetFontFamilyFromMenuSelection(GetMenuRef(gFontMenuID), i, &theFMFontFamily, &theFMFontStyle) );
-            verify_noerr( FMGetFontFromFontFamilyInstance(theFMFontFamily, theFMFontStyle, &currentFont, NULL) );
+				ctRef = CTFontCreateWithQuickdrawInstance("\p", theFMFontFamily, theFMFontStyle, 0.0);
+				if (ctRef != NULL) {
+					currentFont = CTFontGetPlatformFont(ctRef, NULL);
+					CFRelease(ctRef);
+				}
             
             if (currentFont == iFont) {
                 found = true;

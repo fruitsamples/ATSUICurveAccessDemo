@@ -145,7 +145,7 @@
 /* Begin PBXNativeTarget section */
 		8D0C4E890486CD37000505A6 /* ATSUICurveAccessDemo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = BEE54F5B0C5021820094F9AB /* Build configuration list for PBXNativeTarget "ATSUICurveAccessDemo" */;
+			buildConfigurationList = BEA160C40B7CD9DD000D6DB0 /* Build configuration list for PBXNativeTarget "ATSUICurveAccessDemo" */;
 			buildPhases = (
 				8D0C4E8C0486CD37000505A6 /* Resources */,
 				8D0C4E8F0486CD37000505A6 /* Sources */,
@@ -167,10 +167,12 @@
 /* Begin PBXProject section */
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = BEE54F5F0C5021820094F9AB /* Build configuration list for PBXProject "ATSUICurveAccessDemo" */;
+			buildConfigurationList = BEA160C00B7CD9DD000D6DB0 /* Build configuration list for PBXProject "ATSUICurveAccessDemo" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* ATSUICurveAccessDemo */;
 			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				8D0C4E890486CD37000505A6 /* ATSUICurveAccessDemo */,
 			);
@@ -200,7 +202,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 1;
-			shellPath = /bin/tcsh;
+			shellPath = /bin/sh;
 			shellScript = "xcodebuild installsrc SRCROOT=$DSTROOT/Developer/Examples/ATSUI/Curve\\ Access\n/bin/rm -rf $DSTROOT/Developer/Examples/ATSUI/Curve\\ Access/build/\n/usr/sbin/chown root:wheel $DSTROOT/Developer/Examples/ATSUI/Curve\\ Access/*\n";
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -243,98 +245,106 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		BEE54F5C0C5021820094F9AB /* Development */ = {
+		BEA160C10B7CD9DD000D6DB0 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				ARCHS = "$(NATIVE_ARCH)";
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = ATSUICurveAccessDemo_Prefix.pch;
-				INFOPLIST_FILE = Info.plist;
-				PREBINDING = NO;
-				PRODUCT_NAME = ATSUICurveAccessDemo;
-				SKIP_INSTALL = YES;
-				WRAPPER_EXTENSION = app;
-				ZERO_LINK = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				VALID_ARCHS = "ppc7400 ppc970 i386 ppc";
 			};
 			name = Development;
 		};
-		BEE54F5D0C5021820094F9AB /* Deployment */ = {
+		BEA160C20B7CD9DD000D6DB0 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = ATSUICurveAccessDemo_Prefix.pch;
-				INFOPLIST_FILE = Info.plist;
-				PREBINDING = NO;
-				PRODUCT_NAME = ATSUICurveAccessDemo;
-				SKIP_INSTALL = YES;
-				WRAPPER_EXTENSION = app;
-				ZERO_LINK = NO;
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				VALID_ARCHS = "ppc7400 ppc970 i386 ppc";
 			};
 			name = Deployment;
 		};
-		BEE54F5E0C5021820094F9AB /* Default */ = {
+		BEA160C30B7CD9DD000D6DB0 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = ATSUICurveAccessDemo_Prefix.pch;
-				INFOPLIST_FILE = Info.plist;
-				PRODUCT_NAME = ATSUICurveAccessDemo;
-				SKIP_INSTALL = YES;
-				WRAPPER_EXTENSION = app;
+				ARCHS = "$(NATIVE_ARCH)";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				VALID_ARCHS = "ppc7400 ppc970 i386 ppc";
 			};
 			name = Default;
 		};
-		BEE54F600C5021820094F9AB /* Development */ = {
+		BEA160C50B7CD9DD000D6DB0 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ARCHS = "$(NATIVE_ARCH)";
+				COPY_PHASE_STRIP = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 1;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ATSUICurveAccessDemo_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = $DSTROOT/Developer/Examples/ATSUI/Basics;
+				PRODUCT_NAME = ATSUICurveAccessDemo;
+				SKIP_INSTALL = NO;
+				WRAPPER_EXTENSION = app;
 			};
 			name = Development;
 		};
-		BEE54F610C5021820094F9AB /* Deployment */ = {
+		BEA160C60B7CD9DD000D6DB0 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ARCHS = "$(NATIVE_ARCH)";
+				COPY_PHASE_STRIP = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 1;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ATSUICurveAccessDemo_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = $DSTROOT/Developer/Examples/ATSUI/Basics;
+				PRODUCT_NAME = ATSUICurveAccessDemo;
+				SKIP_INSTALL = NO;
+				WRAPPER_EXTENSION = app;
 			};
 			name = Deployment;
 		};
-		BEE54F620C5021820094F9AB /* Default */ = {
+		BEA160C70B7CD9DD000D6DB0 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ARCHS = "$(NATIVE_ARCH)";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 1;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ATSUICurveAccessDemo_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = $DSTROOT/Developer/Examples/ATSUI/Basics;
+				PRODUCT_NAME = ATSUICurveAccessDemo;
+				SKIP_INSTALL = NO;
+				WRAPPER_EXTENSION = app;
 			};
 			name = Default;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		BEE54F5B0C5021820094F9AB /* Build configuration list for PBXNativeTarget "ATSUICurveAccessDemo" */ = {
+		BEA160C00B7CD9DD000D6DB0 /* Build configuration list for PBXProject "ATSUICurveAccessDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				BEE54F5C0C5021820094F9AB /* Development */,
-				BEE54F5D0C5021820094F9AB /* Deployment */,
-				BEE54F5E0C5021820094F9AB /* Default */,
+				BEA160C10B7CD9DD000D6DB0 /* Development */,
+				BEA160C20B7CD9DD000D6DB0 /* Deployment */,
+				BEA160C30B7CD9DD000D6DB0 /* Default */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Default;
 		};
-		BEE54F5F0C5021820094F9AB /* Build configuration list for PBXProject "ATSUICurveAccessDemo" */ = {
+		BEA160C40B7CD9DD000D6DB0 /* Build configuration list for PBXNativeTarget "ATSUICurveAccessDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				BEE54F600C5021820094F9AB /* Development */,
-				BEE54F610C5021820094F9AB /* Deployment */,
-				BEE54F620C5021820094F9AB /* Default */,
+				BEA160C50B7CD9DD000D6DB0 /* Development */,
+				BEA160C60B7CD9DD000D6DB0 /* Deployment */,
+				BEA160C70B7CD9DD000D6DB0 /* Default */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Default;
